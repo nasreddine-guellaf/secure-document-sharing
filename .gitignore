@@ -1,0 +1,16 @@
+backend/node_modules/
+frontend/node_modules/
+backend/.env
+frontend/.env
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/src/uploads/*
+!backend/src/uploads/.gitkeep
+backend/src/uploads/mock-blockchain.json
+frontend/dist/
+*.log
+smart-contract/node_modules/
+smart-contract/artifacts/
+smart-contract/cache/
+smart-contract/out/
+smart-contract/broadcast/

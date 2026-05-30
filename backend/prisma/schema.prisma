@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique
+  passwordHash String
+  /// Allowed values: USER, VERIFIER, ADMIN. Stored as String because Prisma SQLite does not support enum blocks.
+  role         String         @default("USER")
+  createdAt    DateTime       @default(now())
+  documents    Document[]     @relation("OwnerDocuments")
+  sharesSent   Share[]        @relation("ShareOwner")
+  sharesReceived Share[]      @relation("ShareReceiver")
+  verifications Verification[] @relation("Verifier")
+}
+
+model Document {
+  id                  String         @id @default(cuid())
+  documentCode        String         @unique
+  originalName        String
+  mimeType            String
+  size                Int
+  storagePath         String
+  sha256Hash          String
+  category            String
+  confidence          Float
+  aiModel             String?
+  language            String?
+  extractedTextLength Int?
+  blockchainTxHash    String?
+  blockchainStatus    String         @default("PENDING")
+  ownerId             String
+  owner               User           @relation("OwnerDocuments", fields: [ownerId], references: [id])
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  /// Allowed values: ACTIVE, REVOKED, ARCHIVED.
+  status              String         @default("ACTIVE")
+  shares              Share[]
+  verifications       Verification[]
+
+  @@index([ownerId])
+  @@index([documentCode])
+}
+
+model Share {
+  id            String   @id @default(cuid())
+  documentId    String
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  ownerId       String
+  owner         User     @relation("ShareOwner", fields: [ownerId], references: [id])
+  receiverEmail String
+  receiverId    String?
+  receiver      User?    @relation("ShareReceiver", fields: [receiverId], references: [id])
+  createdAt     DateTime @default(now())
+  active        Boolean  @default(true)
+
+  @@index([documentId])
+  @@index([ownerId])
+  @@index([receiverEmail])
+  @@index([receiverId])
+}
+
+model Verification {
+  id               String             @id @default(cuid())
+  documentId       String?
+  document         Document?          @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  documentCode     String?
+  uploadedFileName String
+  calculatedHash   String
+  blockchainHash   String?
+  /// Allowed values: AUTHENTIC, MODIFIED, UNKNOWN, ERROR.
+  result           String
+  verifiedById     String?
+  verifiedBy       User?              @relation("Verifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  createdAt        DateTime           @default(now())
+  message          String?
+
+  @@index([documentId])
+  @@index([documentCode])
+  @@index([verifiedById])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+}
